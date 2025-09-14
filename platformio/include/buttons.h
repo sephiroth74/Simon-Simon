@@ -5,6 +5,7 @@
 #include <Arduino.h>
 #include <functional>
 #include "types.h"
+#include "config.h"
 
 
 
@@ -118,10 +119,10 @@ private:
 public:
     Buttons(int8_t pin)
         : _pin(pin)
-        , _yellow_button("yellow", color_t::ColorYellow, Range(2000, 2250))
-        , _blue_button("blue", color_t::ColorBlue, Range(2330, 2530))
-        , _green_button("green", color_t::ColorGreen, Range(2730, 2930))
-        , _red_button("red", color_t::ColorRed, Range(3000, 3500))
+        , _yellow_button("yellow", color_t::ColorYellow, Range(YELLOW_BUTTON_MIN, YELLOW_BUTTON_MAX))
+        , _blue_button("blue", color_t::ColorBlue, Range(BLUE_BUTTON_MIN, BLUE_BUTTON_MAX))
+        , _green_button("green", color_t::ColorGreen, Range(GREEN_BUTTON_MIN, GREEN_BUTTON_MAX))
+        , _red_button("red", color_t::ColorRed, Range(RED_BUTTON_MIN, RED_BUTTON_MAX))
     {
     }
 

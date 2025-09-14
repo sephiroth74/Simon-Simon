@@ -2,12 +2,49 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Preferences.h>
+#include <math.h>
+
+#ifndef PI
+#define PI 3.14159265359
+#endif
 
 #include "config.h"
 #include "game.h"
 #include "fsm.h"
 #include "tones.h"
 #include <vector>
+
+// PROGMEM strings for display
+const char PROGMEM STR_SIMON[] = "Simon";
+const char PROGMEM STR_AMPERSAND[] = "&";
+const char PROGMEM STR_PRESS_BUTTON[] = "Premi un";
+const char PROGMEM STR_BUTTON_TO[] = "tasto per";
+const char PROGMEM STR_START[] = "iniziare!";
+const char PROGMEM STR_RECORD[] = "Record";
+const char PROGMEM STR_CURRENT[] = "attuale:";
+const char PROGMEM STR_READY[] = "Pronti";
+const char PROGMEM STR_START_GAME[] = "Partenza";
+const char PROGMEM STR_GO[] = "Via!";
+const char PROGMEM STR_PRESS_THE[] = "Premi il";
+const char PROGMEM STR_RIGHT_BUTTON[] = "tasto giusto!";
+const char PROGMEM STR_GREAT[] = "Bravo!";
+const char PROGMEM STR_ROUND[] = "Round: ";
+const char PROGMEM STR_YOU_LOST[] = "Hai perso!";
+const char PROGMEM STR_NEW[] = "Nuovo";
+const char PROGMEM STR_RECORD_EXCL[] = "Record!";
+const char PROGMEM STR_TESTING[] = "Testing";
+const char PROGMEM STR_CELEBRATION[] = "Celebration";
+const char PROGMEM STR_EFFECTS[] = "Effects!";
+const char PROGMEM STR_RECORD_SHORT[] = "RECORD!";
+const char PROGMEM STR_NEW_RECORD[] = "NUOVO RECORD!";
+const char PROGMEM STR_TOTAL_VICTORY[] = "Vittoria";
+const char PROGMEM STR_TOTAL[] = "Totale!";
+const char PROGMEM STR_SEQUENCE[] = "Sequenza";
+const char PROGMEM STR_MAXIMUM[] = "Massima!";
+const char PROGMEM STR_RESET_RECORD[] = "Resetto";
+const char PROGMEM STR_RECORD_RESET[] = "Record...";
+const char PROGMEM STR_RECORD_CLEARED[] = "Record";
+const char PROGMEM STR_CLEARED[] = "Cancellato!";
 
 FSM_INITIAL_STATE(simon::Fsm::Switch, simon::Fsm::InitialState)
 
@@ -57,17 +94,17 @@ void Game::displayWelcomeMessage()
     int16_t x1, y1;
     uint16_t w, h;
 
-    _display.getTextBounds(F("Simon"), 0, 0, &x1, &y1, &w, &h);
+    _display.getTextBounds(FPSTR(STR_SIMON), 0, 0, &x1, &y1, &w, &h);
     _display.setCursor((SCREEN_WIDTH - w) / 2, 0); // Center text
-    _display.println(F("Simon"));
+    _display.println(FPSTR(STR_SIMON));
 
-    _display.getTextBounds(F("&"), 0, 0, &x1, &y1, &w, &h);
+    _display.getTextBounds(FPSTR(STR_AMPERSAND), 0, 0, &x1, &y1, &w, &h);
     _display.setCursor((SCREEN_WIDTH - w) / 2, 16); // Center text
-    _display.println(F("&"));
+    _display.println(FPSTR(STR_AMPERSAND));
 
-    _display.getTextBounds(F("Simon"), 0, 0, &x1, &y1, &w, &h);
+    _display.getTextBounds(FPSTR(STR_SIMON), 0, 0, &x1, &y1, &w, &h);
     _display.setCursor((SCREEN_WIDTH - w) / 2, 32); // Center text
-    _display.println(F("Simon"));
+    _display.println(FPSTR(STR_SIMON));
     _display.display();
 }
 
@@ -85,10 +122,14 @@ bool Game::setup()
     if (!_display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
         Serial.println(F("failed!"));
         _board.set_rgb_led_color(true, false, false);
-        return false;
-    }
 
-    Serial.println(F("done."));
+        // Try to continue without display but indicate error
+        Serial.println(F("Warning: Continuing without display functionality"));
+        delay(2000);
+        _board.turn_off_rgb_leds();
+    } else {
+        Serial.println(F("done."));
+    }
 
     _display.clearDisplay();
     _display.setTextSize(1); // Set text size to 1
@@ -101,6 +142,8 @@ bool Game::setup()
     _display.display();
     if (!_preferences.begin("simon", false)) {
         _display.println(F("error!"));
+        Serial.println(F("Warning: Preferences initialization failed, high score will not persist"));
+        _high_score = 0; // Use default value
         delay(1000);
     } else {
         _high_score = _preferences.getUInt("high_score", 0);
@@ -232,27 +275,16 @@ void Game::onButtonPressed(Button& btn)
     Serial.print(F(" | Button pressed: "));
     Serial.println(btn.getName());
 
-    // just play the sound and display the color of the pressed button
+    // Play sound and display color for feedback in all states
     simon::color_t pressedColor = btn.getType();
+    _buzzer.toneStart(colorToNote(pressedColor), 0); // Play the corresponding note
+    _leds.showColor(pressedColor, 0); // Show the color of the pressed button
 
-    if( currentState.getType() == Fsm::StateType::PLAYING_USER_STATE ) {
-        // If not in PLAYING_USER_STATE, just play the sound and show the color
-        _buzzer.toneStart(colorToNote(pressedColor), 0); // Play the corresponding note
-        _leds.showColor(pressedColor, 0); // Show the color of the pressed button
-        return;
-    } else if( currentState.getType() == Fsm::StateType::INITIAL_STATE) {
-        // If in INITIAL_STATE, just play the sound and show the color
-        _buzzer.toneStart(colorToNote(pressedColor), 0); // Play the corresponding note
-        _leds.showColor(pressedColor, 0); // Show the color of the pressed button
-        return;
+    // Only process game logic in PLAYING_USER_STATE
+    if( currentState.getType() != Fsm::StateType::PLAYING_USER_STATE ) {
+        return; // For other states, just provide feedback and return
     }
 
-    // simon::color_t pressedColor = btn.getType();
-    // Serial.print(F("Pressed color: "));
-    // Serial.println(colorToString(pressedColor));
-
-    // _buzzer.toneStart(colorToNote(pressedColor), 0); // Play the corresponding note
-    // _leds.showColor(pressedColor, 0); // Show the color of the pressed button
 }
 
 void Game::onButtonReleased(Button& btn)
@@ -338,7 +370,7 @@ void Game::onLoopInitialState()
     unsigned long elapsedTime = (millis() - state_start_time) / 1000;
     int switchTime = 5;
 
-    // switch text every 3 seconds
+    // switch text every 5 seconds
     if (elapsedTime % switchTime == 0) {
         if (elapsedTime % (switchTime * 2) == 0) {
             _display.clearDisplay();
@@ -346,18 +378,28 @@ void Game::onLoopInitialState()
             _display.setTextSize(2);
             _display.println();
 
-            _display.println(F("Premi un"));
-            _display.println(F("tasto per"));
-            _display.println(F("iniziare!"));
+            _display.println(FPSTR(STR_PRESS_BUTTON));
+            _display.println(FPSTR(STR_BUTTON_TO));
+            _display.println(FPSTR(STR_START));
         } else {
             _display.clearDisplay();
             _display.setCursor(0, 0);
             _display.setTextSize(2);
-            _display.println(F("Record"));
-            _display.println(F("attuale:"));
+            _display.println(FPSTR(STR_RECORD));
+            _display.println(FPSTR(STR_CURRENT));
             _display.println(_high_score);
         }
         _display.display();
+    }
+
+    // Show rainbow effect every 15 seconds to indicate system is active
+    static unsigned long lastRainbowTime = 0;
+    const unsigned long rainbowInterval = 10000; // 15 seconds
+
+    if (millis() - lastRainbowTime > rainbowInterval) {
+        _leds.rainbow(3, 2); // Quick rainbow with 3ms delay, 1 cycle
+        _leds.clearNow();
+        lastRainbowTime = millis();
     }
 }
 
@@ -378,17 +420,17 @@ void Game::onEnterGameStartState()
     delay(1000); // Short delay before starting the game
 
     _buzzer.playCountdownSound();
-    _display.println(F("Pronti"));
+    _display.println(FPSTR(STR_READY));
     _display.display();
     delay(1000); // Show the message for 1 second
 
     _buzzer.playCountdownSound();
-    _display.println(F("Partenza"));
+    _display.println(FPSTR(STR_START_GAME));
     _display.display();
     delay(1000); // Show the message for 1 second
 
     _buzzer.toneStart(NOTE_C6, 500);
-    _display.println(F("Via!"));
+    _display.println(FPSTR(STR_GO));
     _display.display();
     delay(1000); // Show the message for 1 second
 
@@ -402,6 +444,26 @@ void Game::onEnterGameStartState()
 
 void Game::onEnterPlayingSequenceState()
 {
+    // Check if we've reached the maximum sequence length
+    if (sequence.size() >= MAX_SEQUENCE_LENGTH) {
+        // Player has won by reaching the maximum sequence length!
+        _display.clearDisplay();
+        _display.setTextSize(2);
+        _display.setCursor(0, 0);
+        _display.println(FPSTR(STR_TOTAL_VICTORY));
+        _display.println(FPSTR(STR_TOTAL));
+        _display.println(FPSTR(STR_SEQUENCE));
+        _display.println(FPSTR(STR_MAXIMUM));
+        _display.display();
+        delay(3000);
+
+        // Set new high score and return to initial state
+        _high_score = MAX_SEQUENCE_LENGTH;
+        _preferences.putUInt("high_score", _high_score);
+        fsm_handle::dispatch(Fsm::EventType::INITIAL_STATE_EVENT);
+        return;
+    }
+
     // Add the next color to the sequence
     button_index = 0; // Reset the button index for the new sequence
     sequence.push_back(next_color());
@@ -438,8 +500,8 @@ void Game::onEnterPlayingUserState()
     _display.clearDisplay();
     _display.setTextSize(2);
     _display.setCursor(0, 0);
-    _display.println(F("Premi il"));
-    _display.println(F("tasto giusto!"));
+    _display.println(FPSTR(STR_PRESS_THE));
+    _display.println(FPSTR(STR_RIGHT_BUTTON));
     _display.display();
 
     button_timer = millis(); // Start the timer for button press duration
@@ -478,9 +540,9 @@ void Game::onEnterPlayingWinState()
     _display.clearDisplay();
     _display.setTextSize(2);
     _display.setCursor(0, 0);
-    _display.println(F("Bravo!"));
+    _display.println(FPSTR(STR_GREAT));
     _display.display();
-    
+
     _buzzer.playRoundWinSound();
 
     _leds.rainbow(2, 1);
@@ -488,8 +550,8 @@ void Game::onEnterPlayingWinState()
 
     delay(1000);
 
-    _display.print(F("Round: "));
-    _display.println(sequence.size() + 1);
+    _display.print(FPSTR(STR_ROUND));
+    _display.println(sequence.size());
     _display.display();
     delay(1000);
 
@@ -511,27 +573,264 @@ void Game::onEnterPlayingLoseState()
     _display.clearDisplay();
     _display.setTextSize(2);
     _display.setCursor(0, 0);
-    _display.println(F("Hai perso!"));
+    _display.println(FPSTR(STR_YOU_LOST));
     _display.display();
     delay(2000);
 
     // Check if the current score is higher than the high score
-    if (sequence.size() + 1 > _high_score) {
-        _high_score = sequence.size() + 1;
+    if (sequence.size() > _high_score) {
+        _high_score = sequence.size();
         _preferences.putUInt("high_score", _high_score); // Save the new high score
         _display.clearDisplay();
         _display.setTextSize(2);
         _display.setCursor(0, 0);
-        _display.println(F("Nuovo"));
-        _display.println(F("Record!"));
+        _display.println(FPSTR(STR_NEW));
+        _display.println(FPSTR(STR_RECORD_EXCL));
         _display.println(_high_score);
         _display.display();
 
-        _buzzer.playNewHighScoreSound();
-        delay(4000);
+        // Epic synchronized celebration with sound, lights, and fireworks!
+        synchronizedCelebration();
     }
 
     fsm_handle::dispatch(Fsm::EventType::INITIAL_STATE_EVENT); // Transition back to the initial state
+}
+
+void Game::testCelebrationEffects()
+{
+    Serial.println(F("🎉 Testing celebration effects!"));
+
+    // Display test message
+    _display.clearDisplay();
+    _display.setTextSize(2);
+    _display.setCursor(0, 0);
+    _display.println(FPSTR(STR_TESTING));
+    _display.println(FPSTR(STR_CELEBRATION));
+    _display.println(FPSTR(STR_EFFECTS));
+    _display.display();
+
+    // Synchronized celebration - lights and sound together!
+    synchronizedCelebration();
+
+    Serial.println(F("✨ Celebration test complete!"));
+
+    // Return to normal display after a moment
+    delay(1000);
+    _display.clearDisplay();
+    _display.display();
+}
+
+void Game::synchronizedCelebration()
+{
+    // Start the smooth Pacman melody in the background
+    _buzzer.playNewHighScoreSound();
+
+    // Create visual celebration with lights and display fireworks!
+    const int celebrationSteps = 30;
+    const int stepDuration = 150; // 150ms per step = ~4.5 seconds total
+
+    for (int step = 0; step < celebrationSteps; step++) {
+        // Synchronized light effects
+        switch (step % 6) {
+            case 0:
+            case 1:
+                // Rainbow burst
+                _leds.rainbow(1, 1);
+                break;
+            case 2:
+                // Red flash
+                _leds.fill_all(color_t::ColorRed);
+                break;
+            case 3:
+                // Blue flash
+                _leds.fill_all(color_t::ColorBlue);
+                break;
+            case 4:
+                // Green flash
+                _leds.fill_all(color_t::ColorGreen);
+                break;
+            case 5:
+                // Yellow flash
+                _leds.fill_all(color_t::ColorYellow);
+                break;
+        }
+
+        // Synchronized display fireworks
+        drawFireworks(step);
+
+        delay(stepDuration);
+
+        // Clear LEDs between some steps for sparkle effect
+        if (step % 2 == 1) {
+            _leds.clearNow();
+            delay(30);
+        }
+    }
+
+    // Final fireworks burst on display
+    drawFinalFireworks();
+    _leds.clearNow();
+}
+
+void Game::drawFireworks(int step)
+{
+    _display.clearDisplay();
+
+    // Draw multiple fireworks at different stages
+    int firework1_stage = step % 8;
+    int firework2_stage = (step + 4) % 8;
+
+    // Firework 1 (center-left)
+    drawSingleFirework(32, 32, firework1_stage);
+
+    // Firework 2 (center-right)
+    drawSingleFirework(96, 32, firework2_stage);
+
+    // Add some random sparkles
+    for (int i = 0; i < 8; i++) {
+        int x = random(0, SCREEN_WIDTH);
+        int y = random(0, SCREEN_HEIGHT);
+        _display.drawPixel(x, y, SSD1306_WHITE);
+    }
+
+    // Add celebration text
+    _display.setTextSize(1);
+    _display.setCursor(40, 0);
+    _display.print(FPSTR(STR_RECORD_SHORT));
+
+    _display.display();
+}
+
+void Game::drawSingleFirework(int centerX, int centerY, int stage)
+{
+    switch (stage) {
+        case 0:
+        case 1:
+            // Launch phase - vertical line moving up
+            for (int i = 0; i < stage * 10; i++) {
+                _display.drawPixel(centerX, centerY + 20 - i, SSD1306_WHITE);
+            }
+            break;
+
+        case 2:
+        case 3:
+            {
+                // Small explosion
+                int radius1 = (stage - 1) * 3;
+                for (int angle = 0; angle < 360; angle += 45) {
+                    int x = centerX + (radius1 * cos(angle * PI / 180));
+                    int y = centerY + (radius1 * sin(angle * PI / 180));
+                    if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
+                        _display.drawPixel(x, y, SSD1306_WHITE);
+                    }
+                }
+                break;
+            }
+
+        case 4:
+        case 5:
+        case 6:
+            {
+                // Large explosion with spokes
+                int radius2 = (stage - 2) * 4;
+                for (int angle = 0; angle < 360; angle += 30) {
+                    int x1 = centerX + (radius2 * cos(angle * PI / 180));
+                    int y1 = centerY + (radius2 * sin(angle * PI / 180));
+                    if (x1 >= 0 && x1 < SCREEN_WIDTH && y1 >= 0 && y1 < SCREEN_HEIGHT) {
+                        _display.drawLine(centerX, centerY, x1, y1, SSD1306_WHITE);
+                    }
+                }
+                break;
+            }
+
+        case 7:
+            {
+                // Fading sparkles
+                for (int i = 0; i < 6; i++) {
+                    int x = centerX + random(-15, 15);
+                    int y = centerY + random(-15, 15);
+                    if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
+                        _display.drawPixel(x, y, SSD1306_WHITE);
+                    }
+                }
+                break;
+            }
+    }
+}
+
+void Game::drawFinalFireworks()
+{
+    _display.clearDisplay();
+
+    // Multiple large fireworks across the screen
+    for (int fw = 0; fw < 4; fw++) {
+        int centerX = 20 + fw * 25;
+        int centerY = 20 + random(-10, 20);
+
+        // Large starburst
+        for (int angle = 0; angle < 360; angle += 15) {
+            int x = centerX + (15 * cos(angle * PI / 180));
+            int y = centerY + (15 * sin(angle * PI / 180));
+            if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
+                _display.drawLine(centerX, centerY, x, y, SSD1306_WHITE);
+            }
+        }
+    }
+
+    // Victory text
+    _display.setTextSize(1);
+    _display.setCursor(30, 50);
+    _display.print(FPSTR(STR_NEW_RECORD));
+
+    _display.display();
+    delay(1000);
+}
+
+void Game::resetHighScore()
+{
+    Serial.println(F("🔄 Resetting high score!"));
+
+    // Reset the high score
+    _high_score = 0;
+    _preferences.putUInt("high_score", _high_score);
+
+    // Show reset notification
+    _display.clearDisplay();
+    _display.setTextSize(2);
+    _display.setCursor(0, 0);
+    _display.println(FPSTR(STR_RESET_RECORD));
+    _display.println(FPSTR(STR_RECORD_RESET));
+    _display.display();
+    delay(1500);
+
+    _display.clearDisplay();
+    _display.setTextSize(2);
+    _display.setCursor(0, 0);
+    _display.println(FPSTR(STR_RECORD_CLEARED));
+    _display.println(FPSTR(STR_CLEARED));
+    _display.display();
+
+    // Visual feedback with LEDs
+    for (int i = 0; i < 3; i++) {
+        _leds.fill_all(color_t::ColorRed);
+        delay(200);
+        _leds.clearNow();
+        delay(200);
+    }
+
+    delay(2000);
+
+    // Clear display and return to normal state
+    _display.clearDisplay();
+    _display.display();
+
+    Serial.println(F("✅ High score reset complete!"));
+}
+
+Fsm::StateType Game::getCurrentState()
+{
+    auto currentState = fsm_handle::currentState();
+    return currentState.getType();
 }
 
 

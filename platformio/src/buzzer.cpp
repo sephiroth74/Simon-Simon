@@ -51,29 +51,42 @@ void Buzzer::singleTone(uint16_t note, uint16_t duration)
 
 void Buzzer::playRoundWinSound()
 {
-    uint16_t pause = 50;
-    toneStart(NOTE_C5, pause);
-    toneStart(NOTE_E5, pause);
-    toneStart(NOTE_G5, pause);
-    toneStart(NOTE_C5, pause);
-    toneStart(NOTE_E5, pause);
-    toneStart(NOTE_G5, pause);
-    toneStart(NOTE_C6, pause);
+    uint16_t duration = 60;
+    uint16_t pause = 20;
 
-    stop();
+    singleTone(NOTE_C5, duration);
+    delay(pause);
+    singleTone(NOTE_E5, duration);
+    delay(pause);
+    singleTone(NOTE_G5, duration);
+    delay(pause);
+    singleTone(NOTE_C5, duration);
+    delay(pause);
+    singleTone(NOTE_E5, duration);
+    delay(pause);
+    singleTone(NOTE_G5, duration);
+    delay(pause);
+    singleTone(NOTE_C6, duration);
 } // win
 
 void Buzzer::playInitialSound()
 {
-    uint16_t pause = 100;
+    uint16_t duration = 80;
+    uint16_t pause = 30;
 
-    toneStart(NOTE_C5, pause);
-    toneStart(NOTE_E5, pause);
-    toneStart(NOTE_G5, pause);
-    toneStart(NOTE_C5, pause);
-    toneStart(NOTE_E5, pause);
-    toneStart(NOTE_G5, pause);
-    toneStart(NOTE_C6, pause);
+    singleTone(NOTE_C5, duration);
+    delay(pause);
+    singleTone(NOTE_E5, duration);
+    delay(pause);
+    singleTone(NOTE_G5, duration);
+    delay(pause);
+    singleTone(NOTE_C5, duration);
+    delay(pause);
+    singleTone(NOTE_E5, duration);
+    delay(pause);
+    singleTone(NOTE_G5, duration);
+    delay(pause);
+    singleTone(NOTE_C6, duration);
 } // playInitialSound
 
 void Buzzer::playNewHighScoreSound()
@@ -83,7 +96,7 @@ void Buzzer::playNewHighScoreSound()
 
 void Buzzer::playCountdownSound()
 {
-    toneStart(NOTE_C5, 50);
+    singleTone(NOTE_C5, 100);
 } // playCountdownSound
 
 } // namespace buzzer

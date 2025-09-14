@@ -50,6 +50,11 @@ private:
 
     void onLoopPlayingUserState();
 
+    void synchronizedCelebration();
+    void drawFireworks(int step);
+    void drawSingleFirework(int centerX, int centerY, int stage);
+    void drawFinalFireworks();
+
 public:
     Game();
 
@@ -57,6 +62,9 @@ public:
 
     bool setup(); // Setup the game
     void loop(); // Main game loop
+    void testCelebrationEffects(); // Test celebration effects (for debugging)
+    void resetHighScore(); // Reset high score with visual notification
+    Fsm::StateType getCurrentState(); // Get current FSM state
 };
 
 } // namespace simon

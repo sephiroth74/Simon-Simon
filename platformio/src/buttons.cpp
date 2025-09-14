@@ -26,20 +26,30 @@ void Button::setTapped(bool value) {
     _is_tapped = value;
 }
 
-bool Button::process(int value) {
-    if (_range.contains(value)) {
-        if (_is_pressed) {
-            return false;
-        }
+bool Button::readDigitalPin() {
+    return digitalRead(_pin) == LOW; // Buttons pull to ground when pressed
+}
 
-        _is_pressed = true;
-        return true;
-    } else {
-        if (_is_pressed) {
+void Button::updateState() {
+    bool current_reading = readDigitalPin();
+
+    // If the reading changed, reset debounce timer
+    if (current_reading != _last_state) {
+        _last_debounce_time = millis();
+        _last_state = current_reading;
+    }
+
+    // If stable for debounce delay, update button state
+    if ((millis() - _last_debounce_time) > BUTTONS_DEBOUNCE_DELAY) {
+        if (current_reading && !_is_pressed) {
+            // Button just pressed
+            _is_pressed = true;
+            _is_tapped = false;
+        } else if (!current_reading && _is_pressed) {
+            // Button just released
             _is_pressed = false;
-            return true;
+            _is_tapped = true;
         }
-        return false;
     }
 }
 
@@ -47,18 +57,21 @@ bool Button::process(int value) {
 // Buttons
 // -------------------------------------------
 
-unsigned long lastDebounceTime = 0; // Last time the button state was changed
-uint32_t readingIndex          = 0;
-
 void Buttons::setup() {
-    pinMode(_pin, INPUT_PULLDOWN);
+    // Configure all button pins as input with pullup resistors
+    pinMode(RED_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(GREEN_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(BLUE_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(YELLOW_BUTTON_PIN, INPUT_PULLUP);
+
     _pressed_button = nullptr;
     _tapped_button  = nullptr;
+
+    // Reset all button states
+    _red_button.reset();
+    _green_button.reset();
     _blue_button.reset();
     _yellow_button.reset();
-    _green_button.reset();
-    _red_button.reset();
-    lastDebounceTime = millis(); // Initialize debounce time
 }
 
 void Buttons::loop() {
@@ -74,93 +87,45 @@ void Buttons::pause() {
 
 void Buttons::resume() { _paused = false; }
 
-uint16_t buttonState;
-
-Button* Buttons::check_pressed_button() {
-    buttonState = analogRead(_pin);
-
-    if (buttonState > 1000) {
-        // Serial.print(F("Button state: "));
-        // Serial.println(buttonState);
-    } else {
-        // Serial.println("Button state is too low, ignoring.");
-        return nullptr; // Ignore low values
-    }
-
-    if (_blue_button.inRange(buttonState)) {
-        // Serial.println("Blue button pressed with value: " + String(buttonState));
-        return &_blue_button;
-    } else if (_yellow_button.inRange(buttonState)) {
-        // Serial.println("Yellow button pressed with value: " + String(buttonState));
-        return &_yellow_button;
-    } else if (_green_button.inRange(buttonState)) {
-        // Serial.println("Green button pressed with value: " + String(buttonState));
-        return &_green_button;
-    } else if (_red_button.inRange(buttonState)) {
-        // Serial.println("Red button pressed with value: " + String(buttonState));
-        return &_red_button;
-    }
-    return nullptr;
-}
-
 void Buttons::process_internal() {
-    unsigned long currentTime = millis();
-    if (currentTime - lastDebounceTime < BUTTONS_DEBOUNCE_DELAY) {
-        return; // Ignore if within debounce delay
-    }
+    // Update all button states
+    _red_button.updateState();
+    _green_button.updateState();
+    _blue_button.updateState();
+    _yellow_button.updateState();
 
-    Button* next_pressed_button = check_pressed_button();
-    if (next_pressed_button != nullptr) {
-        readingIndex++;
-        if (readingIndex >= BUTTONS_MIN_READINGS_COUNT) {
-            readingIndex = 0; // Reset index after reaching the minimum count
-        } else {
-            // If we haven't reached the minimum count, just return
-            return;
-        }
-    } else {
-        readingIndex = 0; // Reset index if no button is pressed
-    }
+    // Check for newly pressed buttons
+    Button* buttons[] = {&_red_button, &_green_button, &_blue_button, &_yellow_button};
 
-    if (next_pressed_button != nullptr) {
-        if (_pressed_button == nullptr) {
-            // Serial.print(F("Button pressed: "));
-            // Serial.print(next_pressed_button->getName());
-            // Serial.print(F(" | Value: "));
-            // Serial.println(buttonState);
+    for (Button* button : buttons) {
+        // Check for button press events
+        if (button->isPressed() && _pressed_button != button) {
+            // New button pressed
+            if (_pressed_button != nullptr) {
+                // Release previous button if any
+                _pressed_button->setPressed(false);
+            }
 
-            _pressed_button = next_pressed_button;
-            _pressed_button->setPressed(true);
-            _pressed_button->setTapped(false);
+            _pressed_button = button;
+            _tapped_button = nullptr; // Clear tapped state
 
             if (pressed_cb) {
                 pressed_cb(*_pressed_button);
             }
-
-            lastDebounceTime = millis(); // Update debounce time
         }
 
-    } else if (next_pressed_button == nullptr &&
-               buttonState < lowestButtonState()) { // next_pressed_button is nullptr
-        if (_pressed_button != nullptr) {
-            // Serial.print(F("Button released: "));
-            // Serial.print(_pressed_button->getName());
-            // Serial.print(F(" | Value: "));
-            // Serial.println(buttonState);
-
-            _pressed_button->setPressed(false);
-            _pressed_button->setTapped(true);
-            _tapped_button  = _pressed_button;
+        // Check for button release events
+        if (button->isTapped() && _pressed_button == button) {
+            // Button was released
             _pressed_button = nullptr;
+            _tapped_button = button;
 
             if (released_cb) {
                 released_cb(*_tapped_button);
             }
 
-            lastDebounceTime = millis(); // Update debounce time
-        } else {
-            // No button pressed, reset tapped button
-            _tapped_button = nullptr;
+            // Clear tapped state after handling
+            button->setTapped(false);
         }
     }
 }

@@ -15,38 +15,27 @@
 #define LED_COUNT 24
 // Buzzer pin
 #define BUZZER_PIN D2
-// Buttons pin
-#define BUTTONS_PIN A7
 // Reset button pin
 #define RESET_BUTTON_PIN D7
 
-// Button analog ranges for Arduino Nano ESP32
-#define YELLOW_BUTTON_MIN 2000
-#define YELLOW_BUTTON_MAX 2250
-#define BLUE_BUTTON_MIN   2330
-#define BLUE_BUTTON_MAX   2530
-#define GREEN_BUTTON_MIN  2730
-#define GREEN_BUTTON_MAX  2930
-#define RED_BUTTON_MIN    3000
-#define RED_BUTTON_MAX    3500
+// Individual button pins for Arduino Nano ESP32
+#define RED_BUTTON_PIN    D3
+#define GREEN_BUTTON_PIN  D4
+#define BLUE_BUTTON_PIN   D5
+#define YELLOW_BUTTON_PIN A7
 
 #elif defined(XIAO_ESP32_C6)
 #define LED_PIN           D10
 #define LED_COUNT         24
 #define BUZZER_PIN        D8
-#define BUTTONS_PIN       A1
 // Reset button pin
 #define RESET_BUTTON_PIN  D7
 
-// Button analog ranges for Seeed Xiao ESP32-C6 (calibrated values)
-#define YELLOW_BUTTON_MIN 1630
-#define YELLOW_BUTTON_MAX 1790
-#define BLUE_BUTTON_MIN   1870
-#define BLUE_BUTTON_MAX   2030
-#define GREEN_BUTTON_MIN  2170
-#define GREEN_BUTTON_MAX  2330
-#define RED_BUTTON_MIN    2590
-#define RED_BUTTON_MAX    2750
+// Individual button pins for Seeed Xiao ESP32-C6
+#define RED_BUTTON_PIN    D0
+#define GREEN_BUTTON_PIN  D1
+#define BLUE_BUTTON_PIN   D2
+#define YELLOW_BUTTON_PIN D3
 
 #endif // ARDUINO_NANO_ESP32
 
@@ -78,7 +67,7 @@
 
 // Debug Configuration
 // ------------------------------------------------------
-// Uncomment the line below to enable button calibration mode
+// Button calibration mode is no longer needed with digital buttons
 // #define BUTTON_CALIBRATION_MODE
 
 #endif // __SIMON_CONFIG_H__

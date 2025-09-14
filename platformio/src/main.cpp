@@ -15,65 +15,6 @@
 
 simon::Game game; // Create an instance of the Simon game
 
-#ifdef BUTTON_CALIBRATION_MODE
-void buttonCalibrationTest() {
-    static unsigned long lastPrint    = 0;
-    static uint16_t lastValue         = 0;
-    static uint16_t minValue          = 4095;
-    static uint16_t maxValue          = 0;
-
-    const unsigned long printInterval = 100; // Print every 100ms
-
-    if (millis() - lastPrint > printInterval) {
-        uint16_t currentValue = analogRead(BUTTONS_PIN);
-
-        // Track min/max values
-        if (currentValue > 1000) { // Only track significant readings
-            minValue = min(minValue, currentValue);
-            maxValue = max(maxValue, currentValue);
-        }
-
-        // Only print if value changed significantly or periodically
-        if (abs(currentValue - lastValue) > 10 || (millis() - lastPrint) > 1000) {
-            Serial.print(F("Analog: "));
-            Serial.print(currentValue);
-            Serial.print(F(" | Min: "));
-            Serial.print(minValue);
-            Serial.print(F(" | Max: "));
-            Serial.print(maxValue);
-
-            // Show which button range this falls into
-            if (currentValue >= YELLOW_BUTTON_MIN && currentValue <= YELLOW_BUTTON_MAX) {
-                Serial.print(F(" | YELLOW"));
-            } else if (currentValue >= BLUE_BUTTON_MIN && currentValue <= BLUE_BUTTON_MAX) {
-                Serial.print(F(" | BLUE"));
-            } else if (currentValue >= GREEN_BUTTON_MIN && currentValue <= GREEN_BUTTON_MAX) {
-                Serial.print(F(" | GREEN"));
-            } else if (currentValue >= RED_BUTTON_MIN && currentValue <= RED_BUTTON_MAX) {
-                Serial.print(F(" | RED"));
-            } else if (currentValue > 1000) {
-                Serial.print(F(" | UNKNOWN"));
-            } else {
-                Serial.print(F(" | NO_PRESS"));
-            }
-
-            Serial.println();
-            lastValue = currentValue;
-        }
-
-        lastPrint = millis();
-    }
-
-    // Reset min/max every 30 seconds
-    static unsigned long lastReset = 0;
-    if (millis() - lastReset > 30000) {
-        minValue  = 4095;
-        maxValue  = 0;
-        lastReset = millis();
-        Serial.println(F("--- Min/Max values reset ---"));
-    }
-}
-#endif
 
 void setup() {
     // Initialize serial communication for debugging
@@ -83,26 +24,11 @@ void setup() {
     // Setup reset button pin
     pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
 
-#ifdef BUTTON_CALIBRATION_MODE
-    Serial.println(F("========================================"));
-    Serial.println(F("BUTTON CALIBRATION MODE ENABLED"));
-    Serial.println(F("========================================"));
-    Serial.println(F("Press each button and observe the values:"));
-    Serial.println(F("- Note the min/max values for each button"));
-    Serial.println(F("- Update config.h with appropriate ranges"));
-    Serial.println(F("- Comment out BUTTON_CALIBRATION_MODE when done"));
-    Serial.println(F("========================================"));
-
-    // Only initialize button pin for calibration
-    pinMode(BUTTONS_PIN, INPUT_PULLDOWN);
-    delay(1000);
-#else
     // Normal game setup
     if (!game.setup()) {
         Serial.println(F("Game setup failed!"));
         return;
     }
-#endif
 }
 
 void checkResetButton() {
@@ -163,13 +89,8 @@ void loop() {
     // Check for reset button press
     checkResetButton();
 
-#ifdef BUTTON_CALIBRATION_MODE
-    // Run button calibration test instead of game
-    buttonCalibrationTest();
-#else
     // Call the game loop to handle button presses and game logic
     game.loop();
-#endif
 }
 
 // Some functions of our own for creating animated effects -----------------

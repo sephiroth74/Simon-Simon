@@ -74,7 +74,7 @@ unsigned long button_timer = 0;
 Game::Game() :
     _leds(simon::Leds(strip)) // Initialize the LED controller with the NeoPixel strip
     ,
-    _buttons(BUTTONS_PIN) // Initialize the button controller with the defined pin
+    _buttons() // Initialize the button controller with individual pins
     ,
     _buzzer(BUZZER_PIN) // Initialize the buzzer controller with the defined pin
     ,
@@ -366,10 +366,10 @@ void Game::onLoopInitialState() {
 
     // Show rainbow effect every 15 seconds to indicate system is active
     static unsigned long lastRainbowTime = 0;
-    const unsigned long rainbowInterval  = 10000; // 15 seconds
+    const unsigned long rainbowInterval  = 15000; // 15 seconds
 
     if (millis() - lastRainbowTime > rainbowInterval) {
-        _leds.rainbow(3, 2); // Quick rainbow with 3ms delay, 1 cycle
+        _leds.rainbow(2, 2); // Quick rainbow with 3ms delay, 1 cycle
         _leds.clearNow();
         lastRainbowTime = millis();
     }
@@ -514,12 +514,12 @@ void Game::onEnterPlayingWinState() {
     _leds.rainbow(2, 1);
     _leds.clearNow();
 
-    delay(1000);
+    delay(500);
 
     _display.print(FPSTR(STR_ROUND));
     _display.println(sequence.size());
     _display.display();
-    delay(1000);
+    delay(500);
 
     fsm_handle::dispatch(Fsm::EventType::PLAYING_SEQUENCE_EVENT);
 }

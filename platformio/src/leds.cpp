@@ -1,29 +1,20 @@
-#include <Arduino.h>
 #include "leds.h"
+#include <Arduino.h>
 
 using namespace simon;
 
-void Leds::showColor(simon::color_t c, unsigned long wait)
-{
-    int16_t firstPixel = -1; // Start at the first pixel
-    uint32_t color = simon::colorToRGB(c); // Convert color_t to RGB value
+void Leds::showColor(simon::color_t c, unsigned long wait) {
+    int16_t firstPixel = -1;                   // Start at the first pixel
+    uint32_t color     = simon::colorToRGB(c); // Convert color_t to RGB value
 
     switch (c) {
-    case color_t::ColorRed:
-        firstPixel = 0;
-        break;
+    case color_t::ColorRed:    firstPixel = 0; break;
 
-    case color_t::ColorGreen:
-        firstPixel = 6;
-        break;
+    case color_t::ColorGreen:  firstPixel = 6; break;
 
-    case color_t::ColorBlue:
-        firstPixel = 12;
-        break;
+    case color_t::ColorBlue:   firstPixel = 12; break;
 
-    case color_t::ColorYellow:
-        firstPixel = 18;
-        break;
+    case color_t::ColorYellow: firstPixel = 18; break;
 
     case color_t::ColorNone:
         firstPixel = -1; // No color, no pixels to show
@@ -39,8 +30,7 @@ void Leds::showColor(simon::color_t c, unsigned long wait)
     }
 }
 
-void Leds::fill(uint32_t color, unsigned int firstPixel, unsigned int count)
-{
+void Leds::fill(uint32_t color, unsigned int firstPixel, unsigned int count) {
     if (firstPixel >= _strip.numPixels()) {
         Serial.println(F("Error: firstPixel exceeds strip length!"));
         return; // Exit if firstPixel is out of bounds
@@ -51,27 +41,21 @@ void Leds::fill(uint32_t color, unsigned int firstPixel, unsigned int count)
     }
 
     _strip.fill(color, firstPixel, count); // Fill the strip with the specified color
-    show(); // Update strip to match
+    show();                                // Update strip to match
 }
 
-void Leds::clear()
-{
-    _strip.clear();
-}
+void Leds::clear() { _strip.clear(); }
 
-void Leds::clearNow()
-{
+void Leds::clearNow() {
     clear();
     show();
 }
 
-void Leds::show()
-{
+void Leds::show() {
     _strip.show(); // Update strip to match
 }
 
-void Leds::rainbow(unsigned long wait, uint8_t count)
-{
+void Leds::rainbow(unsigned long wait, uint8_t count) {
     // Hue of first pixel runs 5 complete loops through the color wheel.
     // Color wheel has a range of 65536 but it's OK if we roll over, so
     // just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
@@ -86,12 +70,15 @@ void Leds::rainbow(unsigned long wait, uint8_t count)
         // Above line is equivalent to:
         // strip.rainbow(firstPixelHue, 1, 255, 255, true);
         _strip.show(); // Update strip with new contents
-        delay(wait); // Pause for a moment
+        delay(wait);   // Pause for a moment
     }
 }
 
-void Leds::wipe(uint32_t color, simon::wipe_direction_t direction, unsigned long wait, unsigned int firstPixel, unsigned int count)
-{
+void Leds::wipe(uint32_t color,
+                simon::wipe_direction_t direction,
+                unsigned long wait,
+                unsigned int firstPixel,
+                unsigned int count) {
     switch (direction) {
     case simon::wipe_direction_t::WipeFromStart:
         wipeFromStart(color, wait, firstPixel, count);
@@ -107,8 +94,10 @@ void Leds::wipe(uint32_t color, simon::wipe_direction_t direction, unsigned long
     }
 }
 
-void Leds::wipeFromStart(uint32_t color, unsigned long wait, unsigned int firstPixel, unsigned int count)
-{
+void Leds::wipeFromStart(uint32_t color,
+                         unsigned long wait,
+                         unsigned int firstPixel,
+                         unsigned int count) {
     if (firstPixel >= _strip.numPixels()) {
         Serial.println(F("Error: firstPixel exceeds strip length!"));
         return; // Exit if firstPixel is out of bounds
@@ -120,10 +109,10 @@ void Leds::wipeFromStart(uint32_t color, unsigned long wait, unsigned int firstP
     }
 
     for (int i = firstPixel; i < firstPixel + count; i++) { // For each pixel in strip...
-        _strip.setPixelColor(i, color); //  Set pixel's color (in RAM)
+        _strip.setPixelColor(i, color);                     //  Set pixel's color (in RAM)
 
         if (wait > 0) {
-            show(); //  Update strip to match
+            show();      //  Update strip to match
             delay(wait); //  Pause for a moment
         }
     }
@@ -133,8 +122,10 @@ void Leds::wipeFromStart(uint32_t color, unsigned long wait, unsigned int firstP
     }
 }
 
-void Leds::wipeFromCenter(uint32_t color, unsigned long wait, unsigned int firstPixel, unsigned int count)
-{
+void Leds::wipeFromCenter(uint32_t color,
+                          unsigned long wait,
+                          unsigned int firstPixel,
+                          unsigned int count) {
     if (firstPixel >= _strip.numPixels()) {
         Serial.println(F("Error: firstPixel exceeds strip length!"));
         return; // Exit if firstPixel is out of bounds
@@ -156,7 +147,7 @@ void Leds::wipeFromCenter(uint32_t color, unsigned long wait, unsigned int first
         }
 
         if (wait > 0) {
-            show(); //  Update strip to match
+            show();      //  Update strip to match
             delay(wait); //  Pause for a moment
         }
     }
@@ -166,8 +157,10 @@ void Leds::wipeFromCenter(uint32_t color, unsigned long wait, unsigned int first
     }
 }
 
-void Leds::wipeFromEdged(uint32_t color, unsigned long wait, unsigned int firstPixel, unsigned int count)
-{
+void Leds::wipeFromEdged(uint32_t color,
+                         unsigned long wait,
+                         unsigned int firstPixel,
+                         unsigned int count) {
     if (firstPixel >= _strip.numPixels()) {
         Serial.println(F("Error: firstPixel exceeds strip length!"));
         return; // Exit if firstPixel is out of bounds
@@ -178,12 +171,12 @@ void Leds::wipeFromEdged(uint32_t color, unsigned long wait, unsigned int firstP
         return; // Exit if count exceeds strip length
     }
 
-    for (int i = 0; i < count; i++) { // For each pixel in strip...
-        _strip.setPixelColor(firstPixel + i, color); //  Set pixel's color (in RAM)
+    for (int i = 0; i < count; i++) {                            // For each pixel in strip...
+        _strip.setPixelColor(firstPixel + i, color);             //  Set pixel's color (in RAM)
         _strip.setPixelColor(firstPixel + count - 1 - i, color); // Set the opposite pixel
 
         if (wait > 0) {
-            show(); //  Update strip to match
+            show();      //  Update strip to match
             delay(wait); //  Pause for a moment
         }
     }
@@ -193,9 +186,8 @@ void Leds::wipeFromEdged(uint32_t color, unsigned long wait, unsigned int firstP
     }
 }
 
-void Leds::setup()
-{
-    _strip.begin(); // Initialize the NeoPixel strip
-    _strip.show(); // Initialize all pixels to 'off'
+void Leds::setup() {
+    _strip.begin();           // Initialize the NeoPixel strip
+    _strip.show();            // Initialize all pixels to 'off'
     _strip.setBrightness(50); // Set brightness (0-255)
 }

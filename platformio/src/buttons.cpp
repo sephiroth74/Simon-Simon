@@ -8,8 +8,7 @@ using namespace simon;
 // Button
 // -------------------------------------------
 
-void Button::setPressed(bool value)
-{
+void Button::setPressed(bool value) {
     if (_is_pressed == value)
         return;
 
@@ -20,16 +19,14 @@ void Button::setPressed(bool value)
     }
 }
 
-void Button::setTapped(bool value)
-{
+void Button::setTapped(bool value) {
     if (_is_tapped == value) {
         return;
     }
     _is_tapped = value;
 }
 
-bool Button::process(int value)
-{
+bool Button::process(int value) {
     if (_range.contains(value)) {
         if (_is_pressed) {
             return false;
@@ -51,13 +48,12 @@ bool Button::process(int value)
 // -------------------------------------------
 
 unsigned long lastDebounceTime = 0; // Last time the button state was changed
-uint32_t readingIndex = 0;
+uint32_t readingIndex          = 0;
 
-void Buttons::setup()
-{
+void Buttons::setup() {
     pinMode(_pin, INPUT_PULLDOWN);
     _pressed_button = nullptr;
-    _tapped_button = nullptr;
+    _tapped_button  = nullptr;
     _blue_button.reset();
     _yellow_button.reset();
     _green_button.reset();
@@ -65,31 +61,25 @@ void Buttons::setup()
     lastDebounceTime = millis(); // Initialize debounce time
 }
 
-void Buttons::loop()
-{
+void Buttons::loop() {
     if (!_paused)
         process_internal();
 }
 
-void Buttons::pause()
-{
-    _paused = true;
+void Buttons::pause() {
+    _paused         = true;
     _pressed_button = nullptr;
-    _tapped_button = nullptr;
+    _tapped_button  = nullptr;
 }
 
-void Buttons::resume()
-{
-    _paused = false;
-}
+void Buttons::resume() { _paused = false; }
 
 uint16_t buttonState;
 
-Button* Buttons::check_pressed_button()
-{
+Button* Buttons::check_pressed_button() {
     buttonState = analogRead(_pin);
 
-    if(buttonState > 1000) {
+    if (buttonState > 1000) {
         // Serial.print(F("Button state: "));
         // Serial.println(buttonState);
     } else {
@@ -113,15 +103,14 @@ Button* Buttons::check_pressed_button()
     return nullptr;
 }
 
-void Buttons::process_internal()
-{
+void Buttons::process_internal() {
     unsigned long currentTime = millis();
     if (currentTime - lastDebounceTime < BUTTONS_DEBOUNCE_DELAY) {
         return; // Ignore if within debounce delay
     }
 
     Button* next_pressed_button = check_pressed_button();
-    if(next_pressed_button != nullptr) {
+    if (next_pressed_button != nullptr) {
         readingIndex++;
         if (readingIndex >= BUTTONS_MIN_READINGS_COUNT) {
             readingIndex = 0; // Reset index after reaching the minimum count
@@ -133,8 +122,8 @@ void Buttons::process_internal()
         readingIndex = 0; // Reset index if no button is pressed
     }
 
-    if(next_pressed_button != nullptr) {
-        if(_pressed_button == nullptr) {
+    if (next_pressed_button != nullptr) {
+        if (_pressed_button == nullptr) {
             // Serial.print(F("Button pressed: "));
             // Serial.print(next_pressed_button->getName());
             // Serial.print(F(" | Value: "));
@@ -151,8 +140,9 @@ void Buttons::process_internal()
             lastDebounceTime = millis(); // Update debounce time
         }
 
-    } else if (next_pressed_button == nullptr && buttonState < lowestButtonState()) { // next_pressed_button is nullptr
-        if(_pressed_button != nullptr) {
+    } else if (next_pressed_button == nullptr &&
+               buttonState < lowestButtonState()) { // next_pressed_button is nullptr
+        if (_pressed_button != nullptr) {
             // Serial.print(F("Button released: "));
             // Serial.print(_pressed_button->getName());
             // Serial.print(F(" | Value: "));
@@ -160,7 +150,7 @@ void Buttons::process_internal()
 
             _pressed_button->setPressed(false);
             _pressed_button->setTapped(true);
-            _tapped_button = _pressed_button;
+            _tapped_button  = _pressed_button;
             _pressed_button = nullptr;
 
             if (released_cb) {
@@ -175,12 +165,6 @@ void Buttons::process_internal()
     }
 }
 
-bool Buttons::isTapped()
-{
-    return _tapped_button != nullptr && _tapped_button->isTapped();
-}
+bool Buttons::isTapped() { return _tapped_button != nullptr && _tapped_button->isTapped(); }
 
-bool Buttons::isPressed()
-{
-    return _pressed_button != nullptr && _pressed_button->isPressed();
-}
+bool Buttons::isPressed() { return _pressed_button != nullptr && _pressed_button->isPressed(); }

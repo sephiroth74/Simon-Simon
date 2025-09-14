@@ -1,7 +1,7 @@
 #include <Arduino.h>
+#include <Preferences.h>
 #include <SPI.h>
 #include <Wire.h>
-#include <Preferences.h>
 #include <math.h>
 
 #ifndef PI
@@ -9,42 +9,42 @@
 #endif
 
 #include "config.h"
-#include "game.h"
 #include "fsm.h"
+#include "game.h"
 #include "tones.h"
 #include <vector>
 
 // PROGMEM strings for display
-const char PROGMEM STR_SIMON[] = "Simon";
-const char PROGMEM STR_AMPERSAND[] = "&";
-const char PROGMEM STR_PRESS_BUTTON[] = "Premi un";
-const char PROGMEM STR_BUTTON_TO[] = "tasto per";
-const char PROGMEM STR_START[] = "iniziare!";
-const char PROGMEM STR_RECORD[] = "Record";
-const char PROGMEM STR_CURRENT[] = "attuale:";
-const char PROGMEM STR_READY[] = "Pronti";
-const char PROGMEM STR_START_GAME[] = "Partenza";
-const char PROGMEM STR_GO[] = "Via!";
-const char PROGMEM STR_PRESS_THE[] = "Premi il";
-const char PROGMEM STR_RIGHT_BUTTON[] = "tasto giusto!";
-const char PROGMEM STR_GREAT[] = "Bravo!";
-const char PROGMEM STR_ROUND[] = "Round: ";
-const char PROGMEM STR_YOU_LOST[] = "Hai perso!";
-const char PROGMEM STR_NEW[] = "Nuovo";
-const char PROGMEM STR_RECORD_EXCL[] = "Record!";
-const char PROGMEM STR_TESTING[] = "Testing";
-const char PROGMEM STR_CELEBRATION[] = "Celebration";
-const char PROGMEM STR_EFFECTS[] = "Effects!";
-const char PROGMEM STR_RECORD_SHORT[] = "RECORD!";
-const char PROGMEM STR_NEW_RECORD[] = "NUOVO RECORD!";
-const char PROGMEM STR_TOTAL_VICTORY[] = "Vittoria";
-const char PROGMEM STR_TOTAL[] = "Totale!";
-const char PROGMEM STR_SEQUENCE[] = "Sequenza";
-const char PROGMEM STR_MAXIMUM[] = "Massima!";
-const char PROGMEM STR_RESET_RECORD[] = "Resetto";
-const char PROGMEM STR_RECORD_RESET[] = "Record...";
+const char PROGMEM STR_SIMON[]          = "Simon";
+const char PROGMEM STR_AMPERSAND[]      = "&";
+const char PROGMEM STR_PRESS_BUTTON[]   = "Premi un";
+const char PROGMEM STR_BUTTON_TO[]      = "tasto per";
+const char PROGMEM STR_START[]          = "iniziare!";
+const char PROGMEM STR_RECORD[]         = "Record";
+const char PROGMEM STR_CURRENT[]        = "attuale:";
+const char PROGMEM STR_READY[]          = "Pronti";
+const char PROGMEM STR_START_GAME[]     = "Partenza";
+const char PROGMEM STR_GO[]             = "Via!";
+const char PROGMEM STR_PRESS_THE[]      = "Premi il";
+const char PROGMEM STR_RIGHT_BUTTON[]   = "tasto giusto!";
+const char PROGMEM STR_GREAT[]          = "Bravo!";
+const char PROGMEM STR_ROUND[]          = "Round: ";
+const char PROGMEM STR_YOU_LOST[]       = "Hai perso!";
+const char PROGMEM STR_NEW[]            = "Nuovo";
+const char PROGMEM STR_RECORD_EXCL[]    = "Record!";
+const char PROGMEM STR_TESTING[]        = "Testing";
+const char PROGMEM STR_CELEBRATION[]    = "Celebration";
+const char PROGMEM STR_EFFECTS[]        = "Effects!";
+const char PROGMEM STR_RECORD_SHORT[]   = "RECORD!";
+const char PROGMEM STR_NEW_RECORD[]     = "NUOVO RECORD!";
+const char PROGMEM STR_TOTAL_VICTORY[]  = "Vittoria";
+const char PROGMEM STR_TOTAL[]          = "Totale!";
+const char PROGMEM STR_SEQUENCE[]       = "Sequenza";
+const char PROGMEM STR_MAXIMUM[]        = "Massima!";
+const char PROGMEM STR_RESET_RECORD[]   = "Resetto";
+const char PROGMEM STR_RECORD_RESET[]   = "Record...";
 const char PROGMEM STR_RECORD_CLEARED[] = "Record";
-const char PROGMEM STR_CLEARED[] = "Cancellato!";
+const char PROGMEM STR_CLEARED[]        = "Cancellato!";
 
 FSM_INITIAL_STATE(simon::Fsm::Switch, simon::Fsm::InitialState)
 
@@ -65,24 +65,30 @@ using fsm_handle = simon::Fsm::Switch;
 unsigned long state_start_time = 0;
 
 // Sequence of colors for the game
-std::vector<color_t> sequence; 
+std::vector<color_t> sequence;
 // Current index in the sequence
-size_t button_index = 0; 
+size_t button_index = 0;
 // Timer for button press duration
-unsigned long button_timer = 0; 
+unsigned long button_timer = 0;
 
-Game::Game()
-    : _leds(simon::Leds(strip)) // Initialize the LED controller with the NeoPixel strip
-    , _buttons(BUTTONS_PIN) // Initialize the button controller with the defined pin
-    , _buzzer(BUZZER_PIN) // Initialize the buzzer controller with the defined pin
-    , _display(Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET)) // Initialize the display controller
-    , _board(Board()) // Initialize the board controller
+Game::Game() :
+    _leds(simon::Leds(strip)) // Initialize the LED controller with the NeoPixel strip
+    ,
+    _buttons(BUTTONS_PIN) // Initialize the button controller with the defined pin
+    ,
+    _buzzer(BUZZER_PIN) // Initialize the buzzer controller with the defined pin
+    ,
+    _display(Adafruit_SSD1306(SCREEN_WIDTH,
+                              SCREEN_HEIGHT,
+                              &Wire,
+                              OLED_RESET)) // Initialize the display controller
+    ,
+    _board(Board()) // Initialize the board controller
 {
     // Constructor implementation
 }
 
-void Game::displayWelcomeMessage()
-{
+void Game::displayWelcomeMessage() {
     _display.clearDisplay();
     _display.setTextSize(2);
     _display.setCursor(0, 0); // Start at top-left corner
@@ -108,8 +114,7 @@ void Game::displayWelcomeMessage()
     _display.display();
 }
 
-bool Game::setup()
-{
+bool Game::setup() {
     // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
     Serial.println(F("Init board.."));
     _board.setup();
@@ -132,9 +137,9 @@ bool Game::setup()
     }
 
     _display.clearDisplay();
-    _display.setTextSize(1); // Set text size to 1
+    _display.setTextSize(1);              // Set text size to 1
     _display.setTextColor(SSD1306_WHITE); // Set text color to white
-    _display.setCursor(0, 0); // Set cursor to top-left corner
+    _display.setCursor(0, 0);             // Set cursor to top-left corner
     _display.display();
     delay(100);
 
@@ -142,7 +147,8 @@ bool Game::setup()
     _display.display();
     if (!_preferences.begin("simon", false)) {
         _display.println(F("error!"));
-        Serial.println(F("Warning: Preferences initialization failed, high score will not persist"));
+        Serial.println(
+            F("Warning: Preferences initialization failed, high score will not persist"));
         _high_score = 0; // Use default value
         delay(1000);
     } else {
@@ -166,7 +172,7 @@ bool Game::setup()
     _display.display();
 
     _buttons.setup();
-    
+
     _display.println(F("ok"));
     _display.display();
     delay(500);
@@ -175,7 +181,7 @@ bool Game::setup()
     _display.display();
 
     _buzzer.setup();
-    
+
     _display.println(F("ok"));
     _display.display();
     delay(500);
@@ -188,9 +194,9 @@ bool Game::setup()
     _leds.rainbow();
     _leds.clearNow();
 
-    _leds.wipe(strip.Color(255, 0, 0), simon::WipeFromStart, 50, 0, 6); // Red
-    _leds.wipe(strip.Color(0, 255, 0), simon::WipeFromStart, 50, 6, 6); // Green
-    _leds.wipe(strip.Color(0, 0, 255), simon::WipeFromStart, 50, 12, 6); // Blue
+    _leds.wipe(strip.Color(255, 0, 0), simon::WipeFromStart, 50, 0, 6);    // Red
+    _leds.wipe(strip.Color(0, 255, 0), simon::WipeFromStart, 50, 6, 6);    // Green
+    _leds.wipe(strip.Color(0, 0, 255), simon::WipeFromStart, 50, 12, 6);   // Blue
     _leds.wipe(strip.Color(255, 255, 0), simon::WipeFromStart, 50, 18, 6); // Yellow
 
     delay(1000); // Show the welcome message for 2 seconds
@@ -200,20 +206,12 @@ bool Game::setup()
     _display.display();
 
     // Adding callbacks for button events
-    _buttons.setPressedCallback([this](Button& btn) {
-        this->onButtonPressed(btn);
-    });
-    _buttons.setReleasedCallback([this](Button& btn) {
-        this->onButtonReleased(btn);
-    });
+    _buttons.setPressedCallback([this](Button& btn) { this->onButtonPressed(btn); });
+    _buttons.setReleasedCallback([this](Button& btn) { this->onButtonReleased(btn); });
 
     // Set the initial state of the FSM
-    simon::Fsm::setEnterCallback([this](Fsm::StateType const& type) {
-        this->onStateEnter(type);
-    });
-    simon::Fsm::setExitCallback([this](Fsm::StateType const& type) {
-        this->onStateExit(type);
-    });
+    simon::Fsm::setEnterCallback([this](Fsm::StateType const& type) { this->onStateEnter(type); });
+    simon::Fsm::setExitCallback([this](Fsm::StateType const& type) { this->onStateExit(type); });
 
     fsm_handle::reset();
     fsm_handle::start();
@@ -221,8 +219,7 @@ bool Game::setup()
     return true;
 }
 
-void Game::onStateEnter(Fsm::StateType const& type)
-{
+void Game::onStateEnter(Fsm::StateType const& type) {
     Serial.print(F("==> Entering State: '"));
     Serial.print(Fsm::stateTypeToString(type));
     Serial.println(F("'"));
@@ -230,47 +227,31 @@ void Game::onStateEnter(Fsm::StateType const& type)
     state_start_time = millis(); // Record the time when the state is entered
 
     switch (type) {
-    case Fsm::StateType::INITIAL_STATE:
-        onEnterInitialState();
-        break;
+    case Fsm::StateType::INITIAL_STATE:          onEnterInitialState(); break;
 
-    case Fsm::StateType::GAME_START_STATE:
-        onEnterGameStartState();
-        break;
+    case Fsm::StateType::GAME_START_STATE:       onEnterGameStartState(); break;
 
-    case Fsm::StateType::PLAYING_SEQUENCE_STATE:
-        onEnterPlayingSequenceState();
-        break;
+    case Fsm::StateType::PLAYING_SEQUENCE_STATE: onEnterPlayingSequenceState(); break;
 
-    case Fsm::StateType::PLAYING_USER_STATE:
-        onEnterPlayingUserState();
-        break;
+    case Fsm::StateType::PLAYING_USER_STATE:     onEnterPlayingUserState(); break;
 
-    case Fsm::StateType::PLAYING_WIN_STATE:
-        onEnterPlayingWinState();
-        break;
+    case Fsm::StateType::PLAYING_WIN_STATE:      onEnterPlayingWinState(); break;
 
-    case Fsm::StateType::PLAYING_LOSE_STATE:
-        onEnterPlayingLoseState();
-        break;
+    case Fsm::StateType::PLAYING_LOSE_STATE:     onEnterPlayingLoseState(); break;
 
-    default:
-        Serial.println(F("Unknown state entered."));
-        break;
+    default:                                     Serial.println(F("Unknown state entered.")); break;
     }
 }
 
-void Game::onStateExit(Fsm::StateType const& type)
-{
+void Game::onStateExit(Fsm::StateType const& type) {
     Serial.print(F("<== Exiting State: '"));
     Serial.print(Fsm::stateTypeToString(type));
     Serial.println(F("'"));
 }
 
-void Game::onButtonPressed(Button& btn)
-{
+void Game::onButtonPressed(Button& btn) {
     auto currentState = fsm_handle::currentState();
-    
+
     Serial.print(Fsm::stateTypeToString(currentState.getType()));
     Serial.print(F(" | Button pressed: "));
     Serial.println(btn.getName());
@@ -278,17 +259,15 @@ void Game::onButtonPressed(Button& btn)
     // Play sound and display color for feedback in all states
     simon::color_t pressedColor = btn.getType();
     _buzzer.toneStart(colorToNote(pressedColor), 0); // Play the corresponding note
-    _leds.showColor(pressedColor, 0); // Show the color of the pressed button
+    _leds.showColor(pressedColor, 0);                // Show the color of the pressed button
 
     // Only process game logic in PLAYING_USER_STATE
-    if( currentState.getType() != Fsm::StateType::PLAYING_USER_STATE ) {
+    if (currentState.getType() != Fsm::StateType::PLAYING_USER_STATE) {
         return; // For other states, just provide feedback and return
     }
-
 }
 
-void Game::onButtonReleased(Button& btn)
-{
+void Game::onButtonReleased(Button& btn) {
     auto currentState = fsm_handle::currentState();
     Serial.print(Fsm::stateTypeToString(currentState.getType()));
     Serial.print(F(" | Button released: "));
@@ -296,18 +275,17 @@ void Game::onButtonReleased(Button& btn)
 
     simon::color_t releasedColor = btn.getType();
 
-
     // If we're in the INITIAL state, transition to the GAME_START state
     if (currentState.getType() == Fsm::StateType::INITIAL_STATE) {
-        _buzzer.stop(); // Stop the buzzer sound
+        _buzzer.stop();   // Stop the buzzer sound
         _leds.clearNow(); // Clear the LEDs
         delay(500);
         fsm_handle::dispatch(Fsm::EventType::GAME_START_EVENT);
 
     } else if (currentState.getType() == Fsm::StateType::PLAYING_USER_STATE) {
         button_timer = millis(); // Reset the button timer when a button is pressed
-        _buzzer.stop(); // Stop the buzzer sound when the button is released
-        _leds.clearNow(); // Clear the LEDs when the button is released
+        _buzzer.stop();          // Stop the buzzer sound when the button is released
+        _leds.clearNow();        // Clear the LEDs when the button is released
 
         Serial.print(F("Button released: "));
         Serial.println(btn.getName());
@@ -320,7 +298,7 @@ void Game::onButtonReleased(Button& btn)
 
         // Check if the correct button was released
         if (releasedColor == sequence[button_index]) {
-            if(button_index == sequence.size() - 1) {
+            if (button_index == sequence.size() - 1) {
                 fsm_handle::dispatch(Fsm::EventType::PLAYING_WIN_EVENT);
                 return;
             }
@@ -332,20 +310,16 @@ void Game::onButtonReleased(Button& btn)
     }
 }
 
-void Game::loop()
-{
+void Game::loop() {
     _buttons.loop();
 
     auto currentState = fsm_handle::currentState();
     onStateLoop(currentState.getType());
 }
 
-void Game::onStateLoop(Fsm::StateType const& type)
-{
+void Game::onStateLoop(Fsm::StateType const& type) {
     switch (type) {
-    case Fsm::StateType::INITIAL_STATE:
-        onLoopInitialState();
-        break;
+    case Fsm::StateType::INITIAL_STATE: onLoopInitialState(); break;
 
     case Fsm::StateType::GAME_START_STATE:
         // Handle logic for the GAME_START state if needed
@@ -360,15 +334,13 @@ void Game::onStateLoop(Fsm::StateType const& type)
         onLoopPlayingUserState();
         break;
 
-    default:
-        break;
+    default: break;
     }
 }
 
-void Game::onLoopInitialState()
-{
+void Game::onLoopInitialState() {
     unsigned long elapsedTime = (millis() - state_start_time) / 1000;
-    int switchTime = 5;
+    int switchTime            = 5;
 
     // switch text every 5 seconds
     if (elapsedTime % switchTime == 0) {
@@ -394,7 +366,7 @@ void Game::onLoopInitialState()
 
     // Show rainbow effect every 15 seconds to indicate system is active
     static unsigned long lastRainbowTime = 0;
-    const unsigned long rainbowInterval = 10000; // 15 seconds
+    const unsigned long rainbowInterval  = 10000; // 15 seconds
 
     if (millis() - lastRainbowTime > rainbowInterval) {
         _leds.rainbow(3, 2); // Quick rainbow with 3ms delay, 1 cycle
@@ -403,14 +375,12 @@ void Game::onLoopInitialState()
     }
 }
 
-void Game::onEnterInitialState()
-{
+void Game::onEnterInitialState() {
     sequence.clear();
     button_index = 0;
 }
 
-void Game::onEnterGameStartState()
-{
+void Game::onEnterGameStartState() {
     _display.clearDisplay();
     _display.setTextSize(2);
     _display.setCursor(0, 0);
@@ -442,8 +412,7 @@ void Game::onEnterGameStartState()
     fsm_handle::dispatch(Fsm::EventType::PLAYING_SEQUENCE_EVENT);
 }
 
-void Game::onEnterPlayingSequenceState()
-{
+void Game::onEnterPlayingSequenceState() {
     // Check if we've reached the maximum sequence length
     if (sequence.size() >= MAX_SEQUENCE_LENGTH) {
         // Player has won by reaching the maximum sequence length!
@@ -477,7 +446,7 @@ void Game::onEnterPlayingSequenceState()
     // now play the sequence
     for (const auto& c : sequence) {
         _buzzer.toneStart(colorToNote(c), 500); // Play the corresponding note
-        _leds.showColor(c, 0); // Show each color for 500 ms
+        _leds.showColor(c, 0);                  // Show each color for 500 ms
         _display.clearDisplay();
         _display.setCursor(0, 0);
         _display.setTextSize(2);
@@ -487,15 +456,14 @@ void Game::onEnterPlayingSequenceState()
         delay(700); // Wait for 500 ms before showing the next color
 
         _leds.clearNow(); // Clear the LEDs after showing each color
-        delay(100); // Short delay before the next color
+        delay(100);       // Short delay before the next color
     }
 
     // After showing the sequence, transition to the PLAYING_USER_STATE
     fsm_handle::dispatch(Fsm::EventType::PLAYING_USER_EVENT);
 }
 
-void Game::onEnterPlayingUserState()
-{
+void Game::onEnterPlayingUserState() {
     _leds.clearNow();
     _display.clearDisplay();
     _display.setTextSize(2);
@@ -507,11 +475,10 @@ void Game::onEnterPlayingUserState()
     button_timer = millis(); // Start the timer for button press duration
 }
 
-void Game::onLoopPlayingUserState()
-{
+void Game::onLoopPlayingUserState() {
     unsigned long elapsed_time = (millis() - button_timer);
 
-    if(elapsed_time > IN_SEQUENCE_TIMEOUT) {
+    if (elapsed_time > IN_SEQUENCE_TIMEOUT) {
         fsm_handle::dispatch(Fsm::EventType::PLAYING_LOSE_EVENT);
     }
 
@@ -531,8 +498,7 @@ void Game::onLoopPlayingUserState()
     // }
 }
 
-void Game::onEnterPlayingWinState()
-{
+void Game::onEnterPlayingWinState() {
     delay(500);
 
     _leds.clearNow();
@@ -556,11 +522,9 @@ void Game::onEnterPlayingWinState()
     delay(1000);
 
     fsm_handle::dispatch(Fsm::EventType::PLAYING_SEQUENCE_EVENT);
-
 }
 
-void Game::onEnterPlayingLoseState()
-{
+void Game::onEnterPlayingLoseState() {
     _leds.clearNow();
 
     _buzzer.playErrorSound();
@@ -568,7 +532,6 @@ void Game::onEnterPlayingLoseState()
     delay(ERROR_TONE_DURATION);
 
     _leds.clearNow();
-    
 
     _display.clearDisplay();
     _display.setTextSize(2);
@@ -593,11 +556,11 @@ void Game::onEnterPlayingLoseState()
         synchronizedCelebration();
     }
 
-    fsm_handle::dispatch(Fsm::EventType::INITIAL_STATE_EVENT); // Transition back to the initial state
+    fsm_handle::dispatch(
+        Fsm::EventType::INITIAL_STATE_EVENT); // Transition back to the initial state
 }
 
-void Game::testCelebrationEffects()
-{
+void Game::testCelebrationEffects() {
     Serial.println(F("🎉 Testing celebration effects!"));
 
     // Display test message
@@ -620,39 +583,38 @@ void Game::testCelebrationEffects()
     _display.display();
 }
 
-void Game::synchronizedCelebration()
-{
+void Game::synchronizedCelebration() {
     // Start the smooth Pacman melody in the background
     _buzzer.playNewHighScoreSound();
 
     // Create visual celebration with lights and display fireworks!
     const int celebrationSteps = 30;
-    const int stepDuration = 150; // 150ms per step = ~4.5 seconds total
+    const int stepDuration     = 150; // 150ms per step = ~4.5 seconds total
 
     for (int step = 0; step < celebrationSteps; step++) {
         // Synchronized light effects
         switch (step % 6) {
-            case 0:
-            case 1:
-                // Rainbow burst
-                _leds.rainbow(1, 1);
-                break;
-            case 2:
-                // Red flash
-                _leds.fill_all(color_t::ColorRed);
-                break;
-            case 3:
-                // Blue flash
-                _leds.fill_all(color_t::ColorBlue);
-                break;
-            case 4:
-                // Green flash
-                _leds.fill_all(color_t::ColorGreen);
-                break;
-            case 5:
-                // Yellow flash
-                _leds.fill_all(color_t::ColorYellow);
-                break;
+        case 0:
+        case 1:
+            // Rainbow burst
+            _leds.rainbow(1, 1);
+            break;
+        case 2:
+            // Red flash
+            _leds.fill_all(color_t::ColorRed);
+            break;
+        case 3:
+            // Blue flash
+            _leds.fill_all(color_t::ColorBlue);
+            break;
+        case 4:
+            // Green flash
+            _leds.fill_all(color_t::ColorGreen);
+            break;
+        case 5:
+            // Yellow flash
+            _leds.fill_all(color_t::ColorYellow);
+            break;
         }
 
         // Synchronized display fireworks
@@ -672,8 +634,7 @@ void Game::synchronizedCelebration()
     _leds.clearNow();
 }
 
-void Game::drawFireworks(int step)
-{
+void Game::drawFireworks(int step) {
     _display.clearDisplay();
 
     // Draw multiple fireworks at different stages
@@ -701,65 +662,60 @@ void Game::drawFireworks(int step)
     _display.display();
 }
 
-void Game::drawSingleFirework(int centerX, int centerY, int stage)
-{
+void Game::drawSingleFirework(int centerX, int centerY, int stage) {
     switch (stage) {
-        case 0:
-        case 1:
-            // Launch phase - vertical line moving up
-            for (int i = 0; i < stage * 10; i++) {
-                _display.drawPixel(centerX, centerY + 20 - i, SSD1306_WHITE);
-            }
-            break;
+    case 0:
+    case 1:
+        // Launch phase - vertical line moving up
+        for (int i = 0; i < stage * 10; i++) {
+            _display.drawPixel(centerX, centerY + 20 - i, SSD1306_WHITE);
+        }
+        break;
 
-        case 2:
-        case 3:
-            {
-                // Small explosion
-                int radius1 = (stage - 1) * 3;
-                for (int angle = 0; angle < 360; angle += 45) {
-                    int x = centerX + (radius1 * cos(angle * PI / 180));
-                    int y = centerY + (radius1 * sin(angle * PI / 180));
-                    if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
-                        _display.drawPixel(x, y, SSD1306_WHITE);
-                    }
-                }
-                break;
+    case 2:
+    case 3: {
+        // Small explosion
+        int radius1 = (stage - 1) * 3;
+        for (int angle = 0; angle < 360; angle += 45) {
+            int x = centerX + (radius1 * cos(angle * PI / 180));
+            int y = centerY + (radius1 * sin(angle * PI / 180));
+            if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
+                _display.drawPixel(x, y, SSD1306_WHITE);
             }
+        }
+        break;
+    }
 
-        case 4:
-        case 5:
-        case 6:
-            {
-                // Large explosion with spokes
-                int radius2 = (stage - 2) * 4;
-                for (int angle = 0; angle < 360; angle += 30) {
-                    int x1 = centerX + (radius2 * cos(angle * PI / 180));
-                    int y1 = centerY + (radius2 * sin(angle * PI / 180));
-                    if (x1 >= 0 && x1 < SCREEN_WIDTH && y1 >= 0 && y1 < SCREEN_HEIGHT) {
-                        _display.drawLine(centerX, centerY, x1, y1, SSD1306_WHITE);
-                    }
-                }
-                break;
+    case 4:
+    case 5:
+    case 6: {
+        // Large explosion with spokes
+        int radius2 = (stage - 2) * 4;
+        for (int angle = 0; angle < 360; angle += 30) {
+            int x1 = centerX + (radius2 * cos(angle * PI / 180));
+            int y1 = centerY + (radius2 * sin(angle * PI / 180));
+            if (x1 >= 0 && x1 < SCREEN_WIDTH && y1 >= 0 && y1 < SCREEN_HEIGHT) {
+                _display.drawLine(centerX, centerY, x1, y1, SSD1306_WHITE);
             }
+        }
+        break;
+    }
 
-        case 7:
-            {
-                // Fading sparkles
-                for (int i = 0; i < 6; i++) {
-                    int x = centerX + random(-15, 15);
-                    int y = centerY + random(-15, 15);
-                    if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
-                        _display.drawPixel(x, y, SSD1306_WHITE);
-                    }
-                }
-                break;
+    case 7: {
+        // Fading sparkles
+        for (int i = 0; i < 6; i++) {
+            int x = centerX + random(-15, 15);
+            int y = centerY + random(-15, 15);
+            if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
+                _display.drawPixel(x, y, SSD1306_WHITE);
             }
+        }
+        break;
+    }
     }
 }
 
-void Game::drawFinalFireworks()
-{
+void Game::drawFinalFireworks() {
     _display.clearDisplay();
 
     // Multiple large fireworks across the screen
@@ -786,8 +742,7 @@ void Game::drawFinalFireworks()
     delay(1000);
 }
 
-void Game::resetHighScore()
-{
+void Game::resetHighScore() {
     Serial.println(F("🔄 Resetting high score!"));
 
     // Reset the high score
@@ -827,11 +782,9 @@ void Game::resetHighScore()
     Serial.println(F("✅ High score reset complete!"));
 }
 
-Fsm::StateType Game::getCurrentState()
-{
+Fsm::StateType Game::getCurrentState() {
     auto currentState = fsm_handle::currentState();
     return currentState.getType();
 }
-
 
 } // namespace simon

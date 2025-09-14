@@ -1,13 +1,13 @@
-#include <Arduino.h>
+#include <Adafruit_GFX.h>
 #include <Adafruit_NeoPixel.h>
+#include <Adafruit_SSD1306.h>
+#include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
 #include "config.h" // Configuration file for pin definitions and other constants
-#include "game.h"
 #include "fsm.h"
+#include "game.h"
 
 #ifdef __AVR__
 #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
@@ -16,12 +16,11 @@
 simon::Game game; // Create an instance of the Simon game
 
 #ifdef BUTTON_CALIBRATION_MODE
-void buttonCalibrationTest()
-{
-    static unsigned long lastPrint = 0;
-    static uint16_t lastValue = 0;
-    static uint16_t minValue = 4095;
-    static uint16_t maxValue = 0;
+void buttonCalibrationTest() {
+    static unsigned long lastPrint    = 0;
+    static uint16_t lastValue         = 0;
+    static uint16_t minValue          = 4095;
+    static uint16_t maxValue          = 0;
 
     const unsigned long printInterval = 100; // Print every 100ms
 
@@ -68,16 +67,15 @@ void buttonCalibrationTest()
     // Reset min/max every 30 seconds
     static unsigned long lastReset = 0;
     if (millis() - lastReset > 30000) {
-        minValue = 4095;
-        maxValue = 0;
+        minValue  = 4095;
+        maxValue  = 0;
         lastReset = millis();
         Serial.println(F("--- Min/Max values reset ---"));
     }
 }
 #endif
 
-void setup()
-{
+void setup() {
     // Initialize serial communication for debugging
     Serial.begin(115200);
     delay(1000);
@@ -107,20 +105,19 @@ void setup()
 #endif
 }
 
-void checkResetButton()
-{
-    static bool lastButtonState = HIGH;
-    static unsigned long lastButtonTime = 0;
-    static bool buttonPressed = false;
+void checkResetButton() {
+    static bool lastButtonState               = HIGH;
+    static unsigned long lastButtonTime       = 0;
+    static bool buttonPressed                 = false;
     static unsigned long buttonPressStartTime = 0;
-    const unsigned long debounceDelay = 50;
-    const unsigned long longPressDelay = 7000; // 7 seconds for high score reset
+    const unsigned long debounceDelay         = 50;
+    const unsigned long longPressDelay        = 7000; // 7 seconds for high score reset
 
-    bool currentButtonState = digitalRead(RESET_BUTTON_PIN);
+    bool currentButtonState                   = digitalRead(RESET_BUTTON_PIN);
 
     // Check if button state changed and debounce
     if (currentButtonState != lastButtonState) {
-        lastButtonTime = millis();
+        lastButtonTime  = millis();
         lastButtonState = currentButtonState;
     }
 
@@ -128,7 +125,7 @@ void checkResetButton()
     if ((millis() - lastButtonTime) > debounceDelay) {
         // Detect button press (transition from HIGH to LOW)
         if (currentButtonState == LOW && !buttonPressed) {
-            buttonPressed = true;
+            buttonPressed        = true;
             buttonPressStartTime = millis();
             Serial.println(F("Reset button pressed..."));
         }
@@ -162,8 +159,7 @@ void checkResetButton()
     }
 }
 
-void loop()
-{
+void loop() {
     // Check for reset button press
     checkResetButton();
 

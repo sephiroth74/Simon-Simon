@@ -2,12 +2,12 @@
 #ifndef __SIMON_BUZZER_H__
 #define __SIMON_BUZZER_H__
 
-#include <Arduino.h>
 #include "types.h"
+#include <Arduino.h>
 
 namespace simon {
 class Buzzer {
-private:
+  private:
     int8_t _pin;
 
     /**
@@ -18,14 +18,10 @@ private:
      */
     void _tone(uint16_t note, uint16_t duration);
 
-public:
-    Buzzer(int8_t pin)
-        : _pin(pin)
-    {
-    }
+  public:
+    Buzzer(int8_t pin) : _pin(pin) {}
 
-    ~Buzzer()
-    {
+    ~Buzzer() {
         // Destructor
     }
 
@@ -64,6 +60,6 @@ public:
     void playNewHighScoreSound();
 };
 
-} // namespace buzzer
+} // namespace simon
 
 #endif // __SIMON_BUZZER_H__

@@ -1,15 +1,15 @@
 #ifndef __SIMON_BOARD_H__
 #define __SIMON_BOARD_H__
 
-#include <Arduino.h>
 #include "color.h"
+#include <Arduino.h>
 
 namespace simon {
 
 class Board {
 
-public:
-    Board() = default;
+  public:
+    Board()  = default;
     ~Board() = default;
 
     void setup();

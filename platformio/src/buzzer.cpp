@@ -1,40 +1,25 @@
 
-#include <Arduino.h>
 #include "buzzer.h"
-#include "tones.h"
 #include "config.h"
 #include "melodies/pacman.h"
-
+#include "tones.h"
+#include <Arduino.h>
 
 namespace simon {
 
-void Buzzer::_tone(uint16_t note, uint16_t duration)
-{
-    tone(_pin, note, duration);
-} // _tone
+void Buzzer::_tone(uint16_t note, uint16_t duration) { tone(_pin, note, duration); } // _tone
 
-void Buzzer::setup()
-{
-    pinMode(_pin, OUTPUT);
-} // setup
+void Buzzer::setup() { pinMode(_pin, OUTPUT); } // setup
 
-void Buzzer::toneStart(simon::note_t note, unsigned long duration)
-{
+void Buzzer::toneStart(simon::note_t note, unsigned long duration) {
     _tone(note, duration);
 } // toneStart
 
-void Buzzer::stop()
-{
-    noTone(_pin);
-} // stop
+void Buzzer::stop() { noTone(_pin); } // stop
 
-void Buzzer::playErrorSound()
-{
-    _tone(NOTE_A2, ERROR_TONE_DURATION);
-} // error
+void Buzzer::playErrorSound() { _tone(NOTE_A2, ERROR_TONE_DURATION); } // error
 
-void Buzzer::success()
-{
+void Buzzer::success() {
     singleTone(NOTE_E5, SUCCESS_TONE_DURATION);
     singleTone(NOTE_G5, SUCCESS_TONE_DURATION);
     singleTone(NOTE_E6, SUCCESS_TONE_DURATION);
@@ -42,17 +27,15 @@ void Buzzer::success()
     singleTone(NOTE_G6, SUCCESS_TONE_DURATION);
 } // success
 
-void Buzzer::singleTone(uint16_t note, uint16_t duration)
-{
+void Buzzer::singleTone(uint16_t note, uint16_t duration) {
     toneStart(note);
     delay(duration);
     stop();
 } // singleTone
 
-void Buzzer::playRoundWinSound()
-{
+void Buzzer::playRoundWinSound() {
     uint16_t duration = 60;
-    uint16_t pause = 20;
+    uint16_t pause    = 20;
 
     singleTone(NOTE_C5, duration);
     delay(pause);
@@ -69,10 +52,9 @@ void Buzzer::playRoundWinSound()
     singleTone(NOTE_C6, duration);
 } // win
 
-void Buzzer::playInitialSound()
-{
+void Buzzer::playInitialSound() {
     uint16_t duration = 80;
-    uint16_t pause = 30;
+    uint16_t pause    = 30;
 
     singleTone(NOTE_C5, duration);
     delay(pause);
@@ -89,14 +71,10 @@ void Buzzer::playInitialSound()
     singleTone(NOTE_C6, duration);
 } // playInitialSound
 
-void Buzzer::playNewHighScoreSound()
-{
+void Buzzer::playNewHighScoreSound() {
     play_melody(_pin); // Play the Pacman melody
 } // playNewHighScoreSound
 
-void Buzzer::playCountdownSound()
-{
-    singleTone(NOTE_C5, 100);
-} // playCountdownSound
+void Buzzer::playCountdownSound() { singleTone(NOTE_C5, 100); } // playCountdownSound
 
-} // namespace buzzer
+} // namespace simon

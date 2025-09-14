@@ -2,12 +2,10 @@
 #ifndef __SIMON_BUTTONS_H__
 #define __SIMON_BUTTONS_H__
 
+#include "config.h"
+#include "types.h"
 #include <Arduino.h>
 #include <functional>
-#include "types.h"
-#include "config.h"
-
-
 
 namespace simon {
 
@@ -16,26 +14,19 @@ namespace simon {
 // -------------------------------------------
 
 class Range {
-private:
+  private:
     uint16_t _min_value;
     uint16_t _max_value;
 
-public:
-    Range(uint16_t min_value, uint16_t max_value)
-        : _min_value(min_value)
-        , _max_value(max_value)
-    {
-    }
+  public:
+    Range(uint16_t min_value, uint16_t max_value) : _min_value(min_value), _max_value(max_value) {}
 
-    ~Range() { }
+    ~Range() {}
 
     uint16_t getMin() { return _min_value; }
     uint16_t getMax() { return _max_value; }
 
-    bool const contains(uint16_t value) const
-    {
-        return value >= _min_value && value <= _max_value;
-    }
+    bool const contains(uint16_t value) const { return value >= _min_value && value <= _max_value; }
 };
 
 // -------------------------------------------
@@ -43,25 +34,17 @@ public:
 // -------------------------------------------
 
 class Button {
-private:
+  private:
     const char* _name;
     color_t _type;
     Range _range;
     bool _is_pressed = false;
-    bool _is_tapped = false;
+    bool _is_tapped  = false;
 
-public:
-    Button(
-        const char* name,
-        color_t type,
-        Range range)
-        : _name(name)
-        , _type(type)
-        , _range(range)
-    {
-    }
+  public:
+    Button(const char* name, color_t type, Range range) : _name(name), _type(type), _range(range) {}
 
-    ~Button() { }
+    ~Button() {}
 
     const char* getName() { return _name; }
 
@@ -81,10 +64,9 @@ public:
 
     bool inRange(int value) { return _range.contains(value); }
 
-    void reset()
-    {
+    void reset() {
         _is_pressed = false;
-        _is_tapped = false;
+        _is_tapped  = false;
     }
 };
 
@@ -97,37 +79,34 @@ public:
 // Range redRange(3150, 3300);
 
 class Buttons {
-private:
+  private:
     int8_t _pin;
     Button _yellow_button;
     Button _blue_button;
     Button _green_button;
     Button _red_button;
-    bool _paused = false;
+    bool _paused            = false;
 
     Button* _pressed_button = nullptr;
-    Button* _tapped_button = nullptr;
+    Button* _tapped_button  = nullptr;
 
     typedef std::function<void(Button& btn)> CallbackFunction;
 
-    CallbackFunction pressed_cb = nullptr;
+    CallbackFunction pressed_cb  = nullptr;
     CallbackFunction released_cb = nullptr;
 
     void process_internal();
     Button* check_pressed_button();
 
-public:
-    Buttons(int8_t pin)
-        : _pin(pin)
-        , _yellow_button("yellow", color_t::ColorYellow, Range(YELLOW_BUTTON_MIN, YELLOW_BUTTON_MAX))
-        , _blue_button("blue", color_t::ColorBlue, Range(BLUE_BUTTON_MIN, BLUE_BUTTON_MAX))
-        , _green_button("green", color_t::ColorGreen, Range(GREEN_BUTTON_MIN, GREEN_BUTTON_MAX))
-        , _red_button("red", color_t::ColorRed, Range(RED_BUTTON_MIN, RED_BUTTON_MAX))
-    {
-    }
+  public:
+    Buttons(int8_t pin) :
+        _pin(pin),
+        _yellow_button("yellow", color_t::ColorYellow, Range(YELLOW_BUTTON_MIN, YELLOW_BUTTON_MAX)),
+        _blue_button("blue", color_t::ColorBlue, Range(BLUE_BUTTON_MIN, BLUE_BUTTON_MAX)),
+        _green_button("green", color_t::ColorGreen, Range(GREEN_BUTTON_MIN, GREEN_BUTTON_MAX)),
+        _red_button("red", color_t::ColorRed, Range(RED_BUTTON_MIN, RED_BUTTON_MAX)) {}
 
-    ~Buttons()
-    {
+    ~Buttons() {
         // Destructor
     }
 
@@ -139,27 +118,17 @@ public:
 
     bool isTapped();
 
-    uint16_t lowestButtonState() {
-        return _yellow_button.getRange().getMin();
-    }
+    uint16_t lowestButtonState() { return _yellow_button.getRange().getMin(); }
 
-    void setPressedCallback(CallbackFunction cb)
-    {
-        pressed_cb = cb;
-    }
+    void setPressedCallback(CallbackFunction cb) { pressed_cb = cb; }
 
-    void setReleasedCallback(CallbackFunction cb)
-    {
-        released_cb = cb;
-    }
+    void setReleasedCallback(CallbackFunction cb) { released_cb = cb; }
 
-    color_t getPressedButtonType()
-    {
+    color_t getPressedButtonType() {
         return _pressed_button ? _pressed_button->getType() : color_t::ColorNone;
     }
 
-    color_t getTappedButtonType()
-    {
+    color_t getTappedButtonType() {
         return _tapped_button ? _tapped_button->getType() : color_t::ColorNone;
     }
 
